@@ -18,6 +18,12 @@ import tarfile
 url = "https://cbioportal-datahub.s3.amazonaws.com/brca_metabric.tar.gz"
 archive_path = "../data/brca_metabric.tar.gz"
 
+if not (os.path.exists("../data")):
+    os.mkdir("../data")
+
+if not (os.path.exists("../artifacts")):
+    os.mkdir("../artifacts")
+
 if (os.path.exists(archive_path)):
     print("Data already downloaded")
 else:
@@ -84,6 +90,7 @@ plt.xlabel("Value")
 plt.ylabel("Count")
 plt.tight_layout()
 plt.show()
+plt.savefig("../artifacts/images/GenePlot.png")
 plt.close()
 
 #Claudin Subtype Plot
@@ -94,8 +101,8 @@ plt.xlabel("Subtype")
 plt.ylabel("Count")
 plt.tight_layout()
 plt.show()
+plt.savefig("../artifacts/images/Claudin.png")
 plt.close()
-
 
 ```
 
