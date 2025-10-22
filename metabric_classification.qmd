@@ -20,9 +20,11 @@ archive_path = "../data/brca_metabric.tar.gz"
 
 if not (os.path.exists("../data")):
     os.mkdir("../data")
+    print("Data directory created")
 
 if not (os.path.exists("../artifacts")):
     os.mkdir("../artifacts")
+    print("Artifact directory created")
 
 if (os.path.exists(archive_path)):
     print("Data already downloaded")
@@ -62,7 +64,8 @@ meta_df = pd.read_csv(metadata_path, sep="\t", comment="#")
 meta_df = meta_df.set_index("PATIENT_ID")
 
 
-
+X = X.dropna()
+meta_df = meta_df.dropna()
 
 #print(f"data shape: {X.shape}")
 #print(f"metadata shape: {meta_df.shape}")
@@ -103,6 +106,7 @@ plt.tight_layout()
 plt.show()
 plt.savefig("../artifacts/images/Claudin.png")
 plt.close()
+
 
 ```
 
