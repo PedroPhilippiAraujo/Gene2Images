@@ -86,28 +86,32 @@ import seaborn as sns
 X_long = X.melt(var_name="Feature", value_name="Value")
 
 #Gene Plot
-plt.figure()
-sns.histplot(X_long["Value"], bins=50)
-plt.title("Histogram")
-plt.xlabel("Value")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.show()
-plt.savefig("../artifacts/images/GenePlot.png")
-plt.close()
+#plt.figure()
+#sns.histplot(X_long["Value"], bins=50)
+#plt.title("Histogram")
+#plt.xlabel("Value")
+#plt.ylabel("Count")
+#plt.tight_layout()
+#plt.show()
+#plt.savefig("../artifacts/images/GenePlot.png")
+#plt.close()
 
 #Claudin Subtype Plot
+#plt.figure()
+#sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)    
+#plt.title("Claudin Subtype Count")
+#plt.xlabel("Subtype")
+#plt.ylabel("Count")
+#plt.tight_layout()
+#plt.show()
+#plt.savefig("../artifacts/images/Claudin.png")
+#plt.close()
+
+
 plt.figure()
-sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)    
-plt.title("Claudin Subtype Count")
-plt.xlabel("Subtype")
-plt.ylabel("Count")
+sns.heatmap(X.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
 plt.tight_layout()
 plt.show()
-plt.savefig("../artifacts/images/Claudin.png")
-plt.close()
-
-
 ```
 
 
