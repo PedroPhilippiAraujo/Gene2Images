@@ -98,3 +98,10 @@ plt.close()
 
 
 ```
+
+
+## Drop bad values
+
+```{python}
+
+```
