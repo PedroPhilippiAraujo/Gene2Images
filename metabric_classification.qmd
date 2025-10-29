@@ -367,13 +367,21 @@ plt.close()
 
 #Tensor Conversion
 
-X = merged_df.iloc[:,0:-1].values #X = all expression data
+X = merged_df.iloc[:-400,0:-1].values #X = all gene expression data
 
-Y = merged_df["CLAUDIN_SUBTYPE"].values #Y = Claudin subtype
+X_test = merged_df.iloc[-400:, 0:-1].values 
+
+Y = merged_df["CLAUDIN_SUBTYPE"].iloc[:-400].values #Y = Claudin subtype
 Y = Y.astype(int)
 
+Y_test = merged_df["CLAUDIN_SUBTYPE"].iloc[-400:].values
+Y_test = Y_test.astype(int)
+
+
 X = torch.tensor(X, dtype=torch.float32)
+X_test = torch.tensor(X_test, dtype=torch.float32)
 Y = torch.tensor(Y, dtype=torch.long)
+Y_test = torch.tensor(Y_test, dtype=torch.long)
 
 
 print("Conversion to tensor done")
@@ -387,7 +395,7 @@ n_epochs = 500
 model = nn.Linear(20603, 7)  # change: n_in = 20603 (features), n_out = 7 (classes)
 loss_func = nn.CrossEntropyLoss()  # Cross-Entropy
 
-optimizer = torch.optim.SGD(model.parameters()) 
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3) 
 
 model.train()
 for epoch in range(n_epochs):
@@ -406,14 +414,15 @@ print("Coefficients (weights):", model.weight.detach().numpy())
 print('Loss: ', loss)    
 ```
 
+
 ```{python}
 #Model Evaluation
 model.eval()
 with torch.no_grad():
-    z = model(X)
+    z = model(X_test)
     y_prob = z.softmax(dim=1) # for easier interpretation
     y_pred = z.argmax(dim=1)  # class predition = largest logit
-    acc = (y_pred == Y).float().mean().item()
+    acc = (y_pred == Y_test).float().mean().item()
 
 print('y_true:     ', Y[:7])
 print('z (logits): ', z[:7])
@@ -429,8 +438,120 @@ print(f"\n\nTraining accuracy: {acc:.3f}")
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
-cm = confusion_matrix(Y, y_pred.numpy())
+cm = confusion_matrix(Y_test, y_pred.numpy())
 disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                               display_labels=Y)
 disp.plot(cmap='Blues')
 ```
+
+## Deep Learning
+
+```{python}
+#Tensor Conversion
+
+X = merged_df.iloc[:-400,0:-1].values #X = all gene expression data
+
+X_test = merged_df.iloc[-400:, 0:-1].values 
+
+Y = merged_df["CLAUDIN_SUBTYPE"].iloc[:-400].values #Y = Claudin subtype
+Y = Y.astype(int)
+
+Y_test = merged_df["CLAUDIN_SUBTYPE"].iloc[-400:].values
+Y_test = Y_test.astype(int)
+
+
+X = torch.tensor(X, dtype=torch.float32)
+X_test = torch.tensor(X_test, dtype=torch.float32)
+Y = torch.tensor(Y, dtype=torch.long)
+Y_test = torch.tensor(Y_test, dtype=torch.long)
+
+
+print("Conversion to tensor done")
+```
+
+```{python}
+#Model Definition
+
+class Classifier(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dim=256 ):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+
+            nn.Linear(1024, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+
+        self.latent = nn.Linear(512, hidden_dim)
+        self.latent_bn = nn.BatchNorm1d(hidden_dim)
+        self.classifier = nn.Linear(hidden_dim, output_dim)
+
+#    def forward(self, x):
+#        return self.net(x)
+
+    def forward(self, x):
+        # return NN(x) _and_ hidden_ state z_bn
+        x = self.encoder(x)
+        z = self.latent(x)
+        z_bn = self.latent_bn(z)  # latent representation (approx. normal)
+        out = self.classifier(z_bn)
+        return out, z_bn  # return both for access later
+
+
+#model = Classifier(input_dim, hidden_dim, output_dim)
+```
+
+```{python}
+#model training
+
+n_epochs = 25
+model = Classifier(input_dim = 20603, output_dim=7)  # change: n_in = 20603 (features), n_out = 7 (classes)
+loss_func = nn.CrossEntropyLoss()  # Cross-Entropy
+
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3) 
+
+model.train()
+for epoch in range(n_epochs):
+    # model predictions are interpreted as z = logits
+    z_out, z_bn = model(X)  
+    loss = loss_func(z_out, Y)
+    print(loss)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+   
+```
+
+```{python}
+#Model Evaluation
+#confusion matrix is broken(?)
+
+model.eval()
+with torch.no_grad():
+    z_out, z_bn = model(X_test)
+    y_prob = z_out.softmax(dim=1) # for easier interpretation
+    y_pred = z_out.argmax(dim=1)  # class predition = largest logit
+    acc = (y_pred == Y_test).float().mean().item()
+
+print('y_true:     ', Y[:7])
+#print('z (logits): ', z_out[:7])
+print('y_prob:     ', y_prob[:7])
+print('y_pred:     ', y_pred[:7])
+
+print(f"\n\nTraining accuracy: {acc:.3f}")
+
+#Confusion Matrix
+
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+
+cm = confusion_matrix(Y_test, y_pred.numpy())
+disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                              display_labels=Y)
+disp.plot(cmap='Blues')
+```
+# Divide into Full dim and PCA representation
