@@ -33,12 +33,13 @@ else:
     urllib.request.urlretrieve(url, archive_path)
     print("Download Complete")
 
-
-with tarfile.open(archive_path, "r") as tar:
-    print("Extracting archive")
-    tar.extractall(path="../data/")
-    print("Extraction complete")
-
+if not (os.path.exists("../data/brca_metabric")):
+    with tarfile.open(archive_path, "r") as tar:
+        print("Extracting archive")
+        tar.extractall(path="../data/")
+        print("Extraction complete")
+else:
+    print("Data already extracted")
 
 ```
 
@@ -49,6 +50,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import torch
+import torch.nn as nn
 ```
 
 ## Data Framing
@@ -165,7 +168,7 @@ PAM50_transposed_df = PAM50_df.T
 ## Drop bad values in Expression Data
 
 ```{python}
-print(f'data shape before drpona: {expr_transposed_df.shape}')
+print(f'data shape before dropna: {expr_transposed_df.shape}')
 #print(f'metadata shape before dropna: {meta_df.shape}')
 #print(f'Claudin Subtypes before dropna: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
 expr_transposed_df = expr_transposed_df.dropna()
@@ -216,6 +219,7 @@ plt.figure()
 sns.heatmap(expr_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
 plt.tight_layout()
 plt.show()
+plt.close()
 ```
 
 ## Plot PAM50 Genes
@@ -253,17 +257,17 @@ plt.show()
 ## Drop columns in Meta - Concentration on ID and CLAUDIN
 
 ```{python}
-# print(f'metadata shape before dropna: {meta_df.shape}')
-# print(f'Claudin Subtypes before dropna: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
+print(f'metadata shape before dropna: {meta_df.shape}')
+print(f'Claudin Subtypes before dropna: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
 
 meta_reduced_df = meta_df.drop(columns=['LYMPH_NODES_EXAMINED_POSITIVE',"NPI","CELLULARITY",
 "CHEMOTHERAPY","COHORT","ER_IHC","HER2_SNP6","HORMONE_THERAPY","INFERRED_MENOPAUSAL_STATE"	
 ,"SEX","INTCLUST","AGE_AT_DIAGNOSIS","OS_MONTHS","OS_STATUS","THREEGENE","VITAL_STATUS","LATERALITY","RADIO_THERAPY","HISTOLOGICAL_SUBTYPE","BREAST_SURGERY","RFS_MONTHS","RFS_STATUS"])
 # Dropnas of Meta here because we only need data of Claudine Typ, so we don't care if NA is in some other column
 meta_reduced_df = meta_reduced_df.dropna()
-# print(f"metadata shape after: {meta_reduced_df.shape}")
-# print(meta_reduced_df.shape)
-# print(expr_transposed_df.shape)
+print(f"metadata shape after: {meta_reduced_df.shape}")
+print(meta_reduced_df.shape)
+print(expr_transposed_df.shape)
 
 
 ```
@@ -285,5 +289,71 @@ expr_transposed_df.index.name = 'PATIENT_ID'
 merged_df=expr_transposed_df.merge(meta_reduced_df, how='left', on="PATIENT_ID")
 #change Subtypes from String to numbers
 merged_df["CLAUDIN_SUBTYPE"] = merged_df["CLAUDIN_SUBTYPE"].replace({"LumA": "6", "LumB": "5","Her2": "4","claudin-low": "3","Basal": "2","Normal": "1","NC": "0"})# inplace = True)
-print(merged_df)
+print(merged_df.shape)
+```
+
+
+## Tensor Conversion
+
+```{python}
+
+#Tensor Conversion
+
+X = merged_df.iloc[:,0:-1].values #X = all expression data
+
+Y = merged_df["CLAUDIN_SUBTYPE"].values #Y = Claudin subtype
+Y = Y.astype(int)
+
+X = torch.tensor(X, dtype=torch.float32)
+Y = torch.tensor(Y, dtype=torch.float32)
+
+
+print("Conversion to tensor done")
+```
+
+## Multivalorate Linear Regression
+
+```{python}
+
+n_epochs = 124
+
+model = nn.Linear(20603, 1)
+
+loss_func = nn.MSELoss()
+optimizer = torch.optim.SGD(model.parameters())
+
+model.train()
+for epoch in range(n_epochs):
+    y_pred = model(X)
+    loss = loss_func(y_pred, Y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+print("Fitted parameters:")
+print("Intercept (bias):", model.bias.item())
+
+## Notice more weights
+print("Coefficients (weights):", model.weight.detach().numpy())
+print('Loss: ', loss)
+```
+
+```{python}
+model.eval()
+y_pred = model(X)
+
+# convert to numpy (only for plotting)
+yp = y_pred.detach().numpy()
+yt = Y.numpy()
+
+title_str = f"Truth vs Predictions. Loss = MSE = {loss:.3f}"
+plt.figure(figsize=(6,4))
+plt.plot(yp, yt, 'o')
+plt.xlabel("y_pred = f(x)")
+plt.ylabel("y_true")
+plt.title(title_str)
+plt.legend()
+plt.grid(True)
+plt.show()
+plt.close()
 ```
