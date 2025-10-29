@@ -293,8 +293,7 @@ print(merged_df.shape)
 ```
 
 
-## Tensor Conversion
-
+## Multivalorate Linear Regression
 ```{python}
 
 #Tensor Conversion
@@ -311,9 +310,10 @@ Y = torch.tensor(Y, dtype=torch.float32)
 print("Conversion to tensor done")
 ```
 
-## Multivalorate Linear Regression
 
 ```{python}
+
+#Training
 
 n_epochs = 124
 
@@ -339,6 +339,8 @@ print('Loss: ', loss)
 ```
 
 ```{python}
+#Evaluation
+
 model.eval()
 y_pred = model(X)
 
@@ -356,4 +358,79 @@ plt.legend()
 plt.grid(True)
 plt.show()
 plt.close()
+```
+
+
+## Multinomial Regression
+
+```{python}
+
+#Tensor Conversion
+
+X = merged_df.iloc[:,0:-1].values #X = all expression data
+
+Y = merged_df["CLAUDIN_SUBTYPE"].values #Y = Claudin subtype
+Y = Y.astype(int)
+
+X = torch.tensor(X, dtype=torch.float32)
+Y = torch.tensor(Y, dtype=torch.long)
+
+
+print("Conversion to tensor done")
+```
+
+```{python}
+
+#model training
+
+n_epochs = 500
+model = nn.Linear(20603, 7)  # change: n_in = 20603 (features), n_out = 7 (classes)
+loss_func = nn.CrossEntropyLoss()  # Cross-Entropy
+
+optimizer = torch.optim.SGD(model.parameters()) 
+
+model.train()
+for epoch in range(n_epochs):
+    # model predictions are interpreted as z = logits
+    z = model(X)  
+    loss = loss_func(z, Y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+print("Fitted parameters:")
+print("Intercept (bias):", model.bias.detach().numpy())
+
+## Notice more weights
+print("Coefficients (weights):", model.weight.detach().numpy())
+print('Loss: ', loss)    
+```
+
+```{python}
+#Model Evaluation
+model.eval()
+with torch.no_grad():
+    z = model(X)
+    y_prob = z.softmax(dim=1) # for easier interpretation
+    y_pred = z.argmax(dim=1)  # class predition = largest logit
+    acc = (y_pred == Y).float().mean().item()
+
+print('y_true:     ', Y[:7])
+print('z (logits): ', z[:7])
+print('y_prob:     ', y_prob[:7])
+print('y_pred:     ', y_pred[:7])
+
+print(f"\n\nTraining accuracy: {acc:.3f}")
+
+```
+
+```{python}
+#Confusion Matrix
+
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+
+cm = confusion_matrix(Y, y_pred.numpy())
+disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                              display_labels=Y)
+disp.plot(cmap='Blues')
 ```
