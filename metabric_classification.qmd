@@ -42,59 +42,163 @@ with tarfile.open(archive_path, "r") as tar:
 
 ```
 
+## Imports for Data Framing and Plotting 
+
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+```
 
 ## Data Framing
 
 ```{python}
-import pandas as pd
-
 metabric_dir = "../data/brca_metabric"
 data_path = f"{metabric_dir}/data_mrna_illumina_microarray_zscores_ref_diploid_samples.txt"
 metadata_path = f"{metabric_dir}/data_clinical_patient.txt"
 
 #Read gene expression data
 expr_df = pd.read_csv(data_path, sep="\t")
+#safe one version with Hugo_symbols
+expr_with_Hugo_df = expr_df
+
 expr_df = expr_df.set_index("Entrez_Gene_Id")
 
 expr_df = expr_df.drop(columns=["Hugo_Symbol"])
 
-X = expr_df.T
+expr_transposed_df = expr_df.T
 
 meta_df = pd.read_csv(metadata_path, sep="\t", comment="#")
 meta_df = meta_df.set_index("PATIENT_ID")
 
+```
 
-X = X.dropna()
-meta_df = meta_df.dropna()
+## Creating one Dataframe with only PAM50 Genes
 
-#print(f"data shape: {X.shape}")
-#print(f"metadata shape: {meta_df.shape}")
+```{python}
+# only runs first time without Error, ignore Error if you run it a second time, you can still use PAM50_transposed_df in next python fields
+expr_with_Hugo_df.set_index('Hugo_Symbol', inplace=True)
+selected_symbols = [symbol for symbol in ["ACTR3B", "ANLN", "BAG1", "BCL2", "BIRC5", "BLVRA", "CCNB1","CCNE1", "CDC20", "CDC6", "CDH3", "CENPF", "CEP55", "CXXC5", "EGFR", "ERBB2", "ESR1", "EXO1", "FGFR4", "FOXA1", "FOXC1", "GPR160", "GRB7", "KIF2C", "KRT14", "KRT17", "KRT5", "MAPT", "MDM2", "MELK", "MIA", "MKI67", "MLPH", "MMP11", "MYBL2", "MYC", "NAT1", "NDC80", "NUF2", "ORC6L", "PGR", "PHGDH", "PTTG1", "RRM2", "SFRP1", "SLC39A6", "TMEM45B", "TYMS", "UBE2C", "UBE2T"] if symbol in expr_with_Hugo_df.index]
+PAM50_df = expr_with_Hugo_df.loc[selected_symbols]
+PAM50_df = PAM50_df.set_index("Entrez_Gene_Id")
+PAM50_transposed_df = PAM50_df.T
+```
+
+## Metadata Plots with Input Data before Cleaning
+
+```{python}
+
+#Age at Point of Diagnosis distribution 
+
+# plt.figure()
+# sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
+# plt.title("Histogram of Age at Diagnosis")
+# plt.xlabel("Age")
+# plt.ylabel("Count")
+# plt.tight_layout()
+# plt.savefig("../artifacts/images/AgePlot.png")
+# plt.show()
+# plt.close()
+
+#Chemotherapy
+
+# plt.figure()
+# sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
+# plt.title("Histogram of Chemotherapy")
+# plt.xlabel("Patient had Chemotherapy")
+# plt.ylabel("Number of Patients")
+# plt.tight_layout()
+# plt.savefig("../artifacts/images/Chemotherapy.png")
+# plt.show()
+# plt.close()
+
+#Distribution of Claudin-Subtypes  
+
+# plt.figure()
+# sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)
+# plt.title("Distribution of Claudin Subtypes")
+# plt.xlabel("Claudin Subtype")
+# plt.ylabel("Number of Patients")
+# plt.tight_layout()
+# plt.savefig("../artifacts/images/Claudine_Distribution.png")
+# plt.show()
+# plt.close()
+
+#THREEGENE
+#Distribution of Threegene
+
+# plt.figure()
+# sns.histplot(meta_df["THREEGENE"], bins=4)
+# plt.title("Distribution of Threegene")
+# plt.xlabel("Threegene")
+# plt.ylabel("Number of Patients")
+# plt.tight_layout()
+# plt.xticks(fontsize=7)  
+# plt.savefig("../artifacts/images/ThreeGene_Distribution.png")
+# plt.show()
+# plt.close()
 
 ```
+
+## Expression Data Plots before cleaning the Dataset
+
+```{python}
+#Shows Distribution of values of the first 40 Genes to check if Dataset is normalized
+
+# columns_to_plot = expr_transposed_df.columns[:40]
+# plt.figure(figsize=(15, 30)) 
+# for i, column in enumerate(columns_to_plot):
+#     plt.subplot(10, 4, i + 1)  
+#     sns.histplot(expr_transposed_df[column].dropna(), bins=100)  
+#     plt.title(f'Entrez Gene ID: {column}')  
+#     plt.xlabel("Value")
+#     plt.ylabel("Count")
+#     plt.xlim(-10, 10) 
+#     plt.ylim(0,200) 
+# plt.tight_layout()  
+# plt.savefig("../artifacts/images/Distribution_of_40_Genes.png", dpi=300)  
+# plt.show()  
+# plt.close()
+```
+
+## Drop bad values in Expression Data
+
+```{python}
+print(f'data shape before drpona: {expr_transposed_df.shape}')
+#print(f'metadata shape before dropna: {meta_df.shape}')
+#print(f'Claudin Subtypes before dropna: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
+expr_transposed_df = expr_transposed_df.dropna()
+#meta_df = meta_df.dropna()
+print(f"data shape after: {expr_transposed_df.shape}")
+#print(f"metadata shape after: {meta_df.shape}")
+#print(f'Claudin Subtypes after: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
+
+```
+
 
 ## Data Plotting
 
 ```{python}
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-#print(X.describe())
-#print(X.head())
+#print(expr_transposed_df.describe())
+#print(expr_transposed_df.head())
 #print(meta_df.describe())
 
-X_long = X.melt(var_name="Feature", value_name="Value")
+#print(meta_df['CLAUDIN_SUBTYPE'].value_counts())
+
+
+expr_transposed_df_long = expr_transposed_df.melt(var_name="Feature", value_name="Value")
 
 #Gene Plot
-#plt.figure()
-#sns.histplot(X_long["Value"], bins=50)
-#plt.title("Histogram")
-#plt.xlabel("Value")
-#plt.ylabel("Count")
-#plt.tight_layout()
-#plt.show()
-#plt.savefig("../artifacts/images/GenePlot.png")
-#plt.close()
+# plt.figure()
+# sns.histplot(expr_transposed_df_long["Value"], bins=50)
+# plt.title("Histogram")
+# plt.xlabel("Value")
+# plt.ylabel("Count")
+# plt.tight_layout()
+# plt.show()
+# plt.savefig("../artifacts/images/GenePlot.png")
+# plt.close()
 
 #Claudin Subtype Plot
 #plt.figure()
@@ -109,14 +213,77 @@ X_long = X.melt(var_name="Feature", value_name="Value")
 
 
 plt.figure()
-sns.heatmap(X.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
+sns.heatmap(expr_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
 plt.tight_layout()
 plt.show()
 ```
 
-
-## Drop bad values
+## Plot PAM50 Genes
 
 ```{python}
+#PAM50_transposed_df
 
+#Shows Distribution of values of PAM50_Genes
+
+# columns_to_plot = PAM50_transposed_df.columns[:50]
+# plt.figure(figsize=(15, 30)) 
+# for i, column in enumerate(columns_to_plot):
+#     plt.subplot(13, 4, i + 1)  
+#     sns.histplot(PAM50_transposed_df[column].dropna(), bins=100)  
+#     plt.title("Distribution of PAM50 Values")
+#     plt.title(f'Entrez Gene ID: {column}')  
+#     plt.xlabel("Value")
+#     plt.ylabel("Count")
+#     plt.xlim(-10, 10) 
+#     plt.ylim(0,200) 
+# plt.tight_layout()  
+# plt.savefig("../artifacts/images/Distribution_of_PAM50_Genes.png", dpi=300)  
+# plt.show()  
+# plt.close()
+
+# Plot test Heatmap to compare to test Heatmap of Expression Set
+
+# plt.figure()
+# sns.heatmap(PAM50_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
+# plt.tight_layout()
+# plt.show()
+```
+
+
+## Drop columns in Meta - Concentration on ID and CLAUDIN
+
+```{python}
+# print(f'metadata shape before dropna: {meta_df.shape}')
+# print(f'Claudin Subtypes before dropna: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
+
+meta_reduced_df = meta_df.drop(columns=['LYMPH_NODES_EXAMINED_POSITIVE',"NPI","CELLULARITY",
+"CHEMOTHERAPY","COHORT","ER_IHC","HER2_SNP6","HORMONE_THERAPY","INFERRED_MENOPAUSAL_STATE"	
+,"SEX","INTCLUST","AGE_AT_DIAGNOSIS","OS_MONTHS","OS_STATUS","THREEGENE","VITAL_STATUS","LATERALITY","RADIO_THERAPY","HISTOLOGICAL_SUBTYPE","BREAST_SURGERY","RFS_MONTHS","RFS_STATUS"])
+# Dropnas of Meta here because we only need data of Claudine Typ, so we don't care if NA is in some other column
+meta_reduced_df = meta_reduced_df.dropna()
+# print(f"metadata shape after: {meta_reduced_df.shape}")
+# print(meta_reduced_df.shape)
+# print(expr_transposed_df.shape)
+
+
+```
+
+## Merge Data with reduced Metadata on Patient-ID
+### Change Claudine Subtypes from String to Integer 
+#### LumA        --> 6   (its most often in the data so it gets the highest number)
+#### LumB        --> 5     
+#### Her2        --> 4  
+#### claudin-low --> 3
+#### Basal       --> 2
+#### Normal      --> 1
+#### NC          --> 0
+
+```{python}
+#set Index Name of transposed expr_data the same as meta data
+expr_transposed_df.index.name = 'PATIENT_ID'
+#merge both sets together 
+merged_df=expr_transposed_df.merge(meta_reduced_df, how='left', on="PATIENT_ID")
+#change Subtypes from String to numbers
+merged_df["CLAUDIN_SUBTYPE"] = merged_df["CLAUDIN_SUBTYPE"].replace({"LumA": "6", "LumB": "5","Her2": "4","claudin-low": "3","Basal": "2","Normal": "1","NC": "0"})# inplace = True)
+print(merged_df)
 ```
