@@ -86,11 +86,15 @@ selected_symbols = [symbol for symbol in ["ACTR3B", "ANLN", "BAG1", "BCL2", "BIR
 PAM50_df = expr_with_Hugo_df.loc[selected_symbols]
 PAM50_df = PAM50_df.set_index("Entrez_Gene_Id")
 PAM50_transposed_df = PAM50_df.T
+
+print("Dataframe created")
+
 ```
 
 ## Metadata Plots with Input Data before Cleaning
 
 ```{python}
+#| eval: false
 
 #Age at Point of Diagnosis distribution 
 
@@ -104,7 +108,7 @@ PAM50_transposed_df = PAM50_df.T
 # plt.show()
 # plt.close()
 
-#Chemotherapy
+# #Chemotherapy
 
 # plt.figure()
 # sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
@@ -116,7 +120,7 @@ PAM50_transposed_df = PAM50_df.T
 # plt.show()
 # plt.close()
 
-#Distribution of Claudin-Subtypes  
+# #Distribution of Claudin-Subtypes  
 
 # plt.figure()
 # sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)
@@ -128,8 +132,8 @@ PAM50_transposed_df = PAM50_df.T
 # plt.show()
 # plt.close()
 
-#THREEGENE
-#Distribution of Threegene
+# #THREEGENE
+# #Distribution of Threegene
 
 # plt.figure()
 # sns.histplot(meta_df["THREEGENE"], bins=4)
@@ -147,6 +151,10 @@ PAM50_transposed_df = PAM50_df.T
 ## Expression Data Plots before cleaning the Dataset
 
 ```{python}
+
+#| eval: false
+
+
 #Shows Distribution of values of the first 40 Genes to check if Dataset is normalized
 
 # columns_to_plot = expr_transposed_df.columns[:40]
@@ -163,6 +171,7 @@ PAM50_transposed_df = PAM50_df.T
 # plt.savefig("../artifacts/images/Distribution_of_40_Genes.png", dpi=300)  
 # plt.show()  
 # plt.close()
+
 ```
 
 ## Drop bad values in Expression Data
@@ -176,6 +185,8 @@ expr_transposed_df = expr_transposed_df.dropna()
 print(f"data shape after: {expr_transposed_df.shape}")
 #print(f"metadata shape after: {meta_df.shape}")
 #print(f'Claudin Subtypes after: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
+
+print("Bad Values dropped")
 
 ```
 
@@ -225,6 +236,7 @@ plt.close()
 ## Plot PAM50 Genes
 
 ```{python}
+#| eval: false
 #PAM50_transposed_df
 
 #Shows Distribution of values of PAM50_Genes
@@ -245,12 +257,13 @@ plt.close()
 # plt.show()  
 # plt.close()
 
-# Plot test Heatmap to compare to test Heatmap of Expression Set
+# # Plot test Heatmap to compare to test Heatmap of Expression Set
 
 # plt.figure()
 # sns.heatmap(PAM50_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
 # plt.tight_layout()
 # plt.show()
+
 ```
 
 
@@ -290,6 +303,7 @@ merged_df=expr_transposed_df.merge(meta_reduced_df, how='left', on="PATIENT_ID")
 #change Subtypes from String to numbers
 merged_df["CLAUDIN_SUBTYPE"] = merged_df["CLAUDIN_SUBTYPE"].replace({"LumA": "6", "LumB": "5","Her2": "4","claudin-low": "3","Basal": "2","Normal": "1","NC": "0"})# inplace = True)
 print(merged_df.shape)
+print("Data Merged")
 ```
 
 
@@ -320,7 +334,7 @@ n_epochs = 124
 model = nn.Linear(20603, 1)
 
 loss_func = nn.MSELoss()
-optimizer = torch.optim.SGD(model.parameters())
+
 
 model.train()
 for epoch in range(n_epochs):
@@ -476,15 +490,20 @@ class Classifier(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim=256 ):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 1024),
+            nn.Linear(input_dim, 2048),
+            nn.BatchNorm1d(2048),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+
+            nn.Linear(2048, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
             nn.Dropout(0.2),
 
-            nn.Linear(1024, 512),
+            nn.Linear(1024,512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(0.2)
+
         )
 
         self.latent = nn.Linear(512, hidden_dim)
@@ -509,7 +528,8 @@ class Classifier(nn.Module):
 ```{python}
 #model training
 
-n_epochs = 25
+n_epochs = 30
+losslist = []
 model = Classifier(input_dim = 20603, output_dim=7)  # change: n_in = 20603 (features), n_out = 7 (classes)
 loss_func = nn.CrossEntropyLoss()  # Cross-Entropy
 
@@ -520,7 +540,7 @@ for epoch in range(n_epochs):
     # model predictions are interpreted as z = logits
     z_out, z_bn = model(X)  
     loss = loss_func(z_out, Y)
-    print(loss)
+    losslist.append(loss.item())
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -529,7 +549,6 @@ for epoch in range(n_epochs):
 
 ```{python}
 #Model Evaluation
-#confusion matrix is broken(?)
 
 model.eval()
 with torch.no_grad():
@@ -545,13 +564,25 @@ print('y_pred:     ', y_pred[:7])
 
 print(f"\n\nTraining accuracy: {acc:.3f}")
 
+
+
+#loss plot
+
+xs = [x for x in range(len(losslist))]
+plt.plot(xs, losslist)
+plt.show()
+
 #Confusion Matrix
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
+labels = sorted(torch.unique(Y_test).tolist())
+
 cm = confusion_matrix(Y_test, y_pred.numpy())
-disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=Y)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
 disp.plot(cmap='Blues')
+
+
 ```
+
 # Divide into Full dim and PCA representation
