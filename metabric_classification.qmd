@@ -585,4 +585,15 @@ disp.plot(cmap='Blues')
 
 ```
 
+
+# Model Save
+```{python}
+#Saving the model at artifacts
+path = '../artifacts/model.pt'
+
+torch.save(model, path)
+print(f"Model saved at {path}")
+
+```
+
 # Divide into Full dim and PCA representation
