@@ -598,3 +598,49 @@ print(f"Model saved at {path}")
 ```
 
 # Divide into Full dim and PCA representation
+
+
+# Switching between settings of meta data
+```{python}
+
+#Takes a metadata column name (like "THREEGENE" or "CLAUDIN_SUBTYPE").
+
+#Cleans it (drops NA, removes invalid categories like "NC" or 0).
+
+#Merges it with expression data.
+
+#Splits it automatically into training and test sets (80/20).
+
+def show_metadata_column(meta_df, column_name):
+    if column_name in meta_df.columns:
+
+        #remove empty values
+        meta_clean = meta_df[[column_name]].dropna()
+
+        #remove invalid values 'NC' and '0'
+        meta_clean = meta_clean[~meta_clean[column_name].isin(["NC", "0"])]
+
+        #Merge with expression data
+        merged_df = expr_transposed_df.merge(meta_clean, left_index=True, right_index=True)
+
+        #Training and test sets (80/20)
+        X = merged_df.iloc[:, :-1]
+        Y = merged_df.iloc[:, -1]
+
+        n_total = len(X)
+        n_train = int(n_total * 0.8) # 80% training
+
+        X_train = X.iloc[:n_train, :]
+        X_test = X.iloc[n_train:, :]
+        Y_train = Y.iloc[:n_train]
+        Y_test = Y.iloc[n_train:]
+
+        #print
+        print(f"Metadata column '{column_name}' cleaned and merged with expression data")
+        print(f"Total samples: {n_total}")
+        print(f"Training set: {X_train.shape[0]} samples")
+        print(f"Test set: {X_test.shape[0]} samples")
+
+    else:
+        print(f"Column '{column_name}' does not exist in meta_df")
+```
