@@ -1,11 +1,17 @@
 ---
-title: Gene2Images
-format: html
+title: "Gene2Images"
+author: "Pedro Philippi Araujo, Lea Feilberg, Lennart Koch, Xenia Kukushkina"
+format: 
+  html: 
+    embed: true
+execute:
+  environment: metabric   
+kernel: metabric
 ---
 
 ## Introduction
 
-This code will be use to acquire data and visualize it.
+This code will be used to acquire data and visualize it.
 
 ## Data Acquisition and Extraction
 
@@ -178,16 +184,8 @@ print("Dataframe created")
 
 ```{python}
 print(f'data shape before dropna: {expr_transposed_df.shape}')
-#print(f'metadata shape before dropna: {meta_df.shape}')
-#print(f'Claudin Subtypes before dropna: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
 expr_transposed_df = expr_transposed_df.dropna()
-#meta_df = meta_df.dropna()
 print(f"data shape after: {expr_transposed_df.shape}")
-#print(f"metadata shape after: {meta_df.shape}")
-#print(f'Claudin Subtypes after: {meta_df["CLAUDIN_SUBTYPE"].value_counts()}')
-
-print("Bad Values dropped")
-
 ```
 
 
@@ -335,6 +333,7 @@ model = nn.Linear(20603, 1)
 
 loss_func = nn.MSELoss()
 
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3) 
 
 model.train()
 for epoch in range(n_epochs):
@@ -453,8 +452,10 @@ print(f"\n\nTraining accuracy: {acc:.3f}")
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
 cm = confusion_matrix(Y_test, y_pred.numpy())
-disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=Y)
+labels = [0, 1, 2, 3, 4, 5, 6]
+
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+
 disp.plot(cmap='Blues')
 ```
 
