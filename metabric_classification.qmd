@@ -603,6 +603,9 @@ print(f"Model saved at {path}")
 # Switching between settings of meta data
 ```{python}
 
+from sklearn.model_selection import train_test_split
+
+
 #Takes a metadata column name (like "THREEGENE" or "CLAUDIN_SUBTYPE").
 
 #Cleans it (drops NA, removes invalid categories like "NC" or 0).
@@ -627,13 +630,10 @@ def show_metadata_column(meta_df, column_name):
         X = merged_df.iloc[:, :-1]
         Y = merged_df.iloc[:, -1]
 
-        n_total = len(X)
-        n_train = int(n_total * 0.8) # 80% training
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
 
-        X_train = X.iloc[:n_train, :]
-        X_test = X.iloc[n_train:, :]
-        Y_train = Y.iloc[:n_train]
-        Y_test = Y.iloc[n_train:]
+        #sample count
+        n_total = len(X)
 
         #print
         print(f"Metadata column '{column_name}' cleaned and merged with expression data")
@@ -643,4 +643,8 @@ def show_metadata_column(meta_df, column_name):
 
     else:
         print(f"Column '{column_name}' does not exist in meta_df")
+```
+
+```{python}
+show_metadata_column(meta_df, "THREEGENE")
 ```
