@@ -641,10 +641,35 @@ def show_metadata_column(meta_df, column_name):
         print(f"Training set: {X_train.shape[0]} samples")
         print(f"Test set: {X_test.shape[0]} samples")
 
+        return X_train, X_test, Y_train, Y_test
+
     else:
         print(f"Column '{column_name}' does not exist in meta_df")
 ```
 
+
+# PCA representation
 ```{python}
-show_metadata_column(meta_df, "THREEGENE")
+from sklearn.decomposition import PCA
+
+#z_bn (batch normalization)
+z_bn_np = z_bn.detach().numpy() #create numpy array
+
+#Y_test = tensor with labels
+labels = Y_test.numpy()
+
+#2 dimensional PCA
+pca = PCA(n_components=2)
+z_2d = pca.fit_transform(z_bn_np)
+```
+
+# Plotting of PCA representation
+```{python}
+plt.figure(figsize=(8,6))
+scatter = plt.scatter(z_2d[:,0], z_2d[:,1], c=labels, cmap='tab10', alpha=0.7)
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.title("2D PCA of 512D BatchNorm Latents (Cancer Types)")
+plt.colorbar(scatter, label="Claudin Subtype")
+plt.show()
 ```
