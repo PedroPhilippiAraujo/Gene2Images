@@ -451,12 +451,28 @@ print(f"\n\nTraining accuracy: {acc:.3f}")
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
-cm = confusion_matrix(Y_test, y_pred.numpy())
+# Map numeric labels to actual class names
+class_names = {0: "NC", 1: "Normal", 2: "Basal", 3: "claudin-low", 4: "Her2", 5: "LumB", 6: "LumA"}
 labels = [0, 1, 2, 3, 4, 5, 6]
+label_names = [class_names[i] for i in labels]
 
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+cm = confusion_matrix(Y_test, y_pred.numpy())
 
-disp.plot(cmap='Blues')
+plt.figure(figsize=(10, 8))
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=label_names)
+disp.plot(cmap='Blues', values_format='d')
+plt.title('Confusion Matrix - Multinomial Logistic Regression', fontsize=14, fontweight='bold')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+plt.close()
+
+# Print detailed classification report
+print("\nClassification Report:")
+print(classification_report(Y_test.numpy(), y_pred.numpy(), 
+                          target_names=label_names, 
+                          labels=labels,
+                          zero_division=0))
 ```
 
 ## Deep Learning
@@ -570,18 +586,42 @@ print(f"\n\nTraining accuracy: {acc:.3f}")
 #loss plot
 
 xs = [x for x in range(len(losslist))]
-plt.plot(xs, losslist)
+plt.figure(figsize=(8, 5))
+plt.plot(xs, losslist, linewidth=2)
+plt.xlabel('Epoch', fontsize=12)
+plt.ylabel('Training Loss (Cross-Entropy)', fontsize=12)
+plt.title('Deep Learning Model - Training Loss Over Time', fontsize=14, fontweight='bold')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
 plt.show()
+plt.close()
 
 #Confusion Matrix
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
+# Map numeric labels to actual class names
+class_names = {0: "NC", 1: "Normal", 2: "Basal", 3: "claudin-low", 4: "Her2", 5: "LumB", 6: "LumA"}
 labels = sorted(torch.unique(Y_test).tolist())
+label_names = [class_names[i] for i in labels]
 
 cm = confusion_matrix(Y_test, y_pred.numpy())
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
-disp.plot(cmap='Blues')
+
+plt.figure(figsize=(10, 8))
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=label_names)
+disp.plot(cmap='Blues', values_format='d')
+plt.title('Confusion Matrix - Deep Learning Model', fontsize=14, fontweight='bold')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+plt.close()
+
+# Print detailed classification report
+print("\nClassification Report:")
+print(classification_report(Y_test.numpy(), y_pred.numpy(), 
+                          target_names=label_names, 
+                          labels=labels,
+                          zero_division=0))
 
 
 ```
@@ -595,6 +635,92 @@ with torch.no_grad():
     _, z_bn_final = model(X_test)          
     torch.save(z_bn_final.detach().cpu(), 'z_bn_final.pt')
     print(' Finales z_bn gespeichert → z_bn_final.pt')
+```
+
+# Visualize Z Distribution
+
+```{python}
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+# Convert to numpy for visualization
+z_bn_np = z_bn_final.detach().cpu().numpy()
+
+print(f"Z_BN Shape: {z_bn_np.shape}")
+print(f"Z_BN Statistics:")
+print(f"  Mean: {z_bn_np.mean():.4f}")
+print(f"  Std: {z_bn_np.std():.4f}")
+print(f"  Min: {z_bn_np.min():.4f}")
+print(f"  Max: {z_bn_np.max():.4f}")
+```
+
+## 1. Distribution of Z values (Histogram)
+
+```{python}
+# Plot histogram of all Z values
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.hist(z_bn_np.flatten(), bins=100, alpha=0.7, color='steelblue', edgecolor='black')
+plt.axvline(z_bn_np.mean(), color='red', linestyle='--', linewidth=2, label=f'Mean: {z_bn_np.mean():.2f}')
+plt.xlabel('Z values')
+plt.ylabel('Frequency')
+plt.title('Distribution of all Z_BN values')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+# Q-Q plot to check normality
+plt.subplot(1, 2, 2)
+from scipy import stats
+sample_values = z_bn_np.flatten()
+stats.probplot(sample_values, dist="norm", plot=plt)
+plt.title('Q-Q Plot (Check for Normal Distribution)')
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+## 2. Distribution per Dimension
+
+```{python}
+# Show distribution statistics for first 10 dimensions
+fig, axes = plt.subplots(2, 5, figsize=(18, 8))
+axes = axes.flatten()
+
+for i in range(min(10, z_bn_np.shape[1])):
+    axes[i].hist(z_bn_np[:, i], bins=30, alpha=0.7, color='steelblue', edgecolor='black')
+    axes[i].axvline(z_bn_np[:, i].mean(), color='red', linestyle='--', linewidth=1.5)
+    axes[i].set_title(f'Dimension {i+1}\nμ={z_bn_np[:, i].mean():.2f}, σ={z_bn_np[:, i].std():.2f}')
+    axes[i].set_xlabel('Value')
+    axes[i].set_ylabel('Count')
+    axes[i].grid(True, alpha=0.3)
+
+plt.suptitle('Distribution of First 10 Z_BN Dimensions', fontsize=16, y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+## 3. Correlation Matrix of Z dimensions
+
+```{python}
+# Show correlation between Z dimensions (sample subset)
+n_dims_corr = min(20, z_bn_np.shape[1])
+correlation_matrix = np.corrcoef(z_bn_np[:, :n_dims_corr].T)
+
+plt.figure(figsize=(12, 10))
+sns.heatmap(correlation_matrix, 
+            cmap='coolwarm', center=0, 
+            square=True,
+            xticklabels=[f'D{i+1}' for i in range(n_dims_corr)],
+            yticklabels=[f'D{i+1}' for i in range(n_dims_corr)],
+            cbar_kws={'label': 'Correlation'})
+plt.title(f'Correlation Matrix of First {n_dims_corr} Z_BN Dimensions')
+plt.tight_layout()
+plt.show()
+
+print(f"\nMean absolute correlation (off-diagonal): {np.abs(correlation_matrix[np.triu_indices_from(correlation_matrix, k=1)]).mean():.4f}")
 ```
 
 # Model Save
