@@ -488,7 +488,7 @@ print("Conversion to tensor done")
 #Model Definition
 
 class Classifier(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim=256 ):
+    def __init__(self, input_dim, output_dim, hidden_dim=512 ):
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 2048),
@@ -586,6 +586,16 @@ disp.plot(cmap='Blues')
 
 ```
 
+# Save Z_BN
+
+```{python}
+model.eval()
+with torch.no_grad():
+    # right now its only saving the test zbn (data of 400 patients)
+    _, z_bn_final = model(X_test)          
+    torch.save(z_bn_final.detach().cpu(), 'z_bn_final.pt')
+    print(' Finales z_bn gespeichert → z_bn_final.pt')
+```
 
 # Model Save
 ```{python}
@@ -647,9 +657,9 @@ def show_metadata_column(meta_df, column_name):
         print(f"Column '{column_name}' does not exist in meta_df")
 ```
 
-
 # PCA representation
 ```{python}
+<<<<<<< HEAD
 from sklearn.decomposition import PCA
 
 #z_bn (batch normalization)
@@ -673,3 +683,8 @@ plt.title("2D PCA of 512D BatchNorm Latents (Cancer Types)")
 plt.colorbar(scatter, label="Claudin Subtype")
 plt.show()
 ```
+
+=======
+show_metadata_column(meta_df, "THREEGENE")
+```
+>>>>>>> 154a7e577e476f04a92cc9dbaba07dfb69178e58
