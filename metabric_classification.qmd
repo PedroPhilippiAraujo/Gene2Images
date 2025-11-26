@@ -785,7 +785,6 @@ def show_metadata_column(meta_df, column_name):
 
 # PCA representation
 ```{python}
-<<<<<<< HEAD
 from sklearn.decomposition import PCA
 
 #z_bn (batch normalization)
@@ -810,7 +809,5 @@ plt.colorbar(scatter, label="Claudin Subtype")
 plt.show()
 ```
 
-=======
 show_metadata_column(meta_df, "THREEGENE")
 ```
->>>>>>> 154a7e577e476f04a92cc9dbaba07dfb69178e58
