@@ -100,83 +100,83 @@ print("Dataframe created")
 ## Metadata Plots with Input Data before Cleaning
 
 ```{python}
-#| eval: false
+#| code-fold: true
+# Ensure output subfolder exists for images saved by this section
+import os
+os.makedirs("../artifacts/images", exist_ok=True)
 
 #Age at Point of Diagnosis distribution 
 
-# plt.figure()
-# sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
-# plt.title("Histogram of Age at Diagnosis")
-# plt.xlabel("Age")
-# plt.ylabel("Count")
-# plt.tight_layout()
-# plt.savefig("../artifacts/images/AgePlot.png")
-# plt.show()
-# plt.close()
+plt.figure()
+sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
+plt.title("Histogram of Age at Diagnosis")
+plt.xlabel("Age")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.savefig("../artifacts/images/AgePlot.png")
+plt.show()
+plt.close()
 
 # #Chemotherapy
 
-# plt.figure()
-# sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
-# plt.title("Histogram of Chemotherapy")
-# plt.xlabel("Patient had Chemotherapy")
-# plt.ylabel("Number of Patients")
-# plt.tight_layout()
-# plt.savefig("../artifacts/images/Chemotherapy.png")
-# plt.show()
-# plt.close()
+plt.figure()
+sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
+plt.title("Histogram of Chemotherapy")
+plt.xlabel("Patient had Chemotherapy")
+plt.ylabel("Number of Patients")
+plt.tight_layout()
+plt.savefig("../artifacts/images/Chemotherapy.png")
+plt.show()
+plt.close()
 
 # #Distribution of Claudin-Subtypes  
 
-# plt.figure()
-# sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)
-# plt.title("Distribution of Claudin Subtypes")
-# plt.xlabel("Claudin Subtype")
-# plt.ylabel("Number of Patients")
-# plt.tight_layout()
-# plt.savefig("../artifacts/images/Claudine_Distribution.png")
-# plt.show()
-# plt.close()
+plt.figure()
+sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)
+plt.title("Distribution of Claudin Subtypes")
+plt.xlabel("Claudin Subtype")
+plt.ylabel("Number of Patients")
+plt.tight_layout()
+plt.savefig("../artifacts/images/Claudine_Distribution.png")
+plt.show()
+plt.close()
 
 # #THREEGENE
 # #Distribution of Threegene
 
-# plt.figure()
-# sns.histplot(meta_df["THREEGENE"], bins=4)
-# plt.title("Distribution of Threegene")
-# plt.xlabel("Threegene")
-# plt.ylabel("Number of Patients")
-# plt.tight_layout()
-# plt.xticks(fontsize=7)  
-# plt.savefig("../artifacts/images/ThreeGene_Distribution.png")
-# plt.show()
-# plt.close()
+plt.figure()
+sns.histplot(meta_df["THREEGENE"], bins=4)
+plt.title("Distribution of Threegene")
+plt.xlabel("Threegene")
+plt.ylabel("Number of Patients")
+plt.tight_layout()
+plt.xticks(fontsize=7)  
+plt.savefig("../artifacts/images/ThreeGene_Distribution.png")
+plt.show()
+plt.close()
 
 ```
 
 ## Expression Data Plots before cleaning the Dataset
 
 ```{python}
-
-#| eval: false
-
-
+#| code-fold: true
 #Shows Distribution of values of the first 40 Genes to check if Dataset is normalized
 
-# columns_to_plot = expr_transposed_df.columns[:40]
-# plt.figure(figsize=(15, 30)) 
-# for i, column in enumerate(columns_to_plot):
-#     plt.subplot(10, 4, i + 1)  
-#     sns.histplot(expr_transposed_df[column].dropna(), bins=100)  
-#     plt.title(f'Entrez Gene ID: {column}')  
-#     plt.xlabel("Value")
-#     plt.ylabel("Count")
-#     plt.xlim(-10, 10) 
-#     plt.ylim(0,200) 
-# plt.tight_layout()  
-# plt.savefig("../artifacts/images/Distribution_of_40_Genes.png", dpi=300)  
-# plt.show()  
-# plt.close()
+columns_to_plot = expr_transposed_df.columns[:40]
+plt.figure(figsize=(15, 30)) 
+for i, column in enumerate(columns_to_plot):
+    plt.subplot(10, 4, i + 1)  
+    sns.histplot(expr_transposed_df[column].dropna(), bins=100)  
+    plt.title(f'Entrez Gene ID: {column}')  
+    plt.xlabel("Value")
+    plt.ylabel("Count")
+    plt.xlim(-10, 10) 
+    plt.ylim(0,200) 
+plt.tight_layout()  
+plt.savefig("../artifacts/images/Distribution_of_40_Genes.png", dpi=300)  
+plt.show()  
+plt.close()
 
 ```
 
@@ -189,40 +189,46 @@ print(f"data shape after: {expr_transposed_df.shape}")
 ```
 
 
+## Data Summary Statistics
+
+```{python}
+#| code-fold: true
+#| output: false
+
+print(expr_transposed_df.describe())
+print(expr_transposed_df.head())
+print(meta_df.describe())
+print(meta_df['CLAUDIN_SUBTYPE'].value_counts())
+```
+
 ## Data Plotting
 
 ```{python}
-#print(expr_transposed_df.describe())
-#print(expr_transposed_df.head())
-#print(meta_df.describe())
-
-#print(meta_df['CLAUDIN_SUBTYPE'].value_counts())
-
+#| code-fold: true
 
 expr_transposed_df_long = expr_transposed_df.melt(var_name="Feature", value_name="Value")
 
 #Gene Plot
-# plt.figure()
-# sns.histplot(expr_transposed_df_long["Value"], bins=50)
-# plt.title("Histogram")
-# plt.xlabel("Value")
-# plt.ylabel("Count")
-# plt.tight_layout()
-# plt.show()
-# plt.savefig("../artifacts/images/GenePlot.png")
-# plt.close()
+plt.figure()
+sns.histplot(expr_transposed_df_long["Value"], bins=50)
+plt.title("Histogram")
+plt.xlabel("Value")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.show()
+plt.savefig("../artifacts/images/GenePlot.png")
+plt.close()
 
 #Claudin Subtype Plot
-#plt.figure()
-#sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)    
-#plt.title("Claudin Subtype Count")
-#plt.xlabel("Subtype")
-#plt.ylabel("Count")
-#plt.tight_layout()
-#plt.show()
-#plt.savefig("../artifacts/images/Claudin.png")
-#plt.close()
-
+plt.figure()
+sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)    
+plt.title("Claudin Subtype Count")
+plt.xlabel("Subtype")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.show()
+plt.savefig("../artifacts/images/Claudin.png")
+plt.close()
 
 plt.figure()
 sns.heatmap(expr_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
@@ -234,33 +240,33 @@ plt.close()
 ## Plot PAM50 Genes
 
 ```{python}
-#| eval: false
+#| code-fold: true
 #PAM50_transposed_df
 
 #Shows Distribution of values of PAM50_Genes
 
-# columns_to_plot = PAM50_transposed_df.columns[:50]
-# plt.figure(figsize=(15, 30)) 
-# for i, column in enumerate(columns_to_plot):
-#     plt.subplot(13, 4, i + 1)  
-#     sns.histplot(PAM50_transposed_df[column].dropna(), bins=100)  
-#     plt.title("Distribution of PAM50 Values")
-#     plt.title(f'Entrez Gene ID: {column}')  
-#     plt.xlabel("Value")
-#     plt.ylabel("Count")
-#     plt.xlim(-10, 10) 
-#     plt.ylim(0,200) 
-# plt.tight_layout()  
-# plt.savefig("../artifacts/images/Distribution_of_PAM50_Genes.png", dpi=300)  
-# plt.show()  
-# plt.close()
+#columns_to_plot = PAM50_transposed_df.columns[:50]
+#plt.figure(figsize=(15, 30)) 
+#for i, column in enumerate(columns_to_plot):
+#    plt.subplot(13, 4, i + 1)  
+#    sns.histplot(PAM50_transposed_df[column].dropna(), bins=100)  
+#    plt.title("Distribution of PAM50 Values")
+#    plt.title(f'Entrez Gene ID: {column}')  
+#    plt.xlabel("Value")
+#    plt.ylabel("Count")
+#    plt.xlim(-10, 10) 
+#    plt.ylim(0,200) 
+#plt.tight_layout()  
+#plt.savefig("../artifacts/images/Distribution_of_PAM50_Genes.png", dpi=300)  
+#plt.show()  
+#plt.close()
 
-# # Plot test Heatmap to compare to test Heatmap of Expression Set
+# Plot test Heatmap to compare to test Heatmap of Expression Set
 
-# plt.figure()
-# sns.heatmap(PAM50_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
-# plt.tight_layout()
-# plt.show()
+plt.figure()
+sns.heatmap(PAM50_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
+plt.tight_layout()
+plt.show()
 
 ```
 
@@ -338,7 +344,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 model.train()
 for epoch in range(n_epochs):
     y_pred = model(X)
-    loss = loss_func(y_pred, Y)
+    loss = loss_func(y_pred, Y.unsqueeze(1))
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -580,11 +586,16 @@ print('y_prob:     ', y_prob[:7])
 print('y_pred:     ', y_pred[:7])
 
 print(f"\n\nTraining accuracy: {acc:.3f}")
+```
 
+## Model Evaluation - Visualizations
 
+```{python}
+#| code-fold: true
 
-#loss plot
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
+# Loss plot
 xs = [x for x in range(len(losslist))]
 plt.figure(figsize=(8, 5))
 plt.plot(xs, losslist, linewidth=2)
@@ -596,11 +607,7 @@ plt.tight_layout()
 plt.show()
 plt.close()
 
-#Confusion Matrix
-
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
-
-# Map numeric labels to actual class names
+# Confusion Matrix
 class_names = {0: "NC", 1: "Normal", 2: "Basal", 3: "claudin-low", 4: "Her2", 5: "LumB", 6: "LumA"}
 labels = sorted(torch.unique(Y_test).tolist())
 label_names = [class_names[i] for i in labels]
@@ -622,8 +629,6 @@ print(classification_report(Y_test.numpy(), y_pred.numpy(),
                           target_names=label_names, 
                           labels=labels,
                           zero_division=0))
-
-
 ```
 
 # Save Z_BN
@@ -658,6 +663,7 @@ print(f"  Max: {z_bn_np.max():.4f}")
 ## 1. Distribution of Z values (Histogram)
 
 ```{python}
+#| code-fold: true
 # Plot histogram of all Z values
 plt.figure(figsize=(12, 5))
 
@@ -685,6 +691,7 @@ plt.show()
 ## 2. Distribution per Dimension
 
 ```{python}
+#| code-fold: true
 # Show distribution statistics for first 10 dimensions
 fig, axes = plt.subplots(2, 5, figsize=(18, 8))
 axes = axes.flatten()
@@ -705,6 +712,7 @@ plt.show()
 ## 3. Correlation Matrix of Z dimensions
 
 ```{python}
+#| code-fold: true
 # Show correlation between Z dimensions (sample subset)
 n_dims_corr = min(20, z_bn_np.shape[1])
 correlation_matrix = np.corrcoef(z_bn_np[:, :n_dims_corr].T)
@@ -800,6 +808,7 @@ z_2d = pca.fit_transform(z_bn_np)
 
 # Plotting of PCA representation
 ```{python}
+#| code-fold: true
 plt.figure(figsize=(8,6))
 scatter = plt.scatter(z_2d[:,0], z_2d[:,1], c=labels, cmap='tab10', alpha=0.7)
 plt.xlabel("PC1")
