@@ -107,27 +107,27 @@ os.makedirs("../artifacts/images", exist_ok=True)
 
 #Age at Point of Diagnosis distribution 
 
-plt.figure()
-sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
-plt.title("Histogram of Age at Diagnosis")
-plt.xlabel("Age")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.savefig("../artifacts/images/AgePlot.png")
-plt.show()
-plt.close()
-
-# #Chemotherapy
-
-plt.figure()
-sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
-plt.title("Histogram of Chemotherapy")
-plt.xlabel("Patient had Chemotherapy")
-plt.ylabel("Number of Patients")
-plt.tight_layout()
-plt.savefig("../artifacts/images/Chemotherapy.png")
-plt.show()
-plt.close()
+#plt.figure()
+#sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
+#plt.title("Histogram of Age at Diagnosis")
+#plt.xlabel("Age")
+#plt.ylabel("Count")
+#plt.tight_layout()
+#plt.savefig("../artifacts/images/AgePlot.png")
+#plt.show()
+#plt.close()
+#
+## #Chemotherapy
+#
+#plt.figure()
+#sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
+#plt.title("Histogram of Chemotherapy")
+#plt.xlabel("Patient had Chemotherapy")
+#plt.ylabel("Number of Patients")
+#plt.tight_layout()
+#plt.savefig("../artifacts/images/Chemotherapy.png")
+#plt.show()
+#plt.close()
 
 # #Distribution of Claudin-Subtypes  
 
@@ -139,43 +139,6 @@ plt.ylabel("Number of Patients")
 plt.tight_layout()
 plt.savefig("../artifacts/images/Claudine_Distribution.png")
 plt.show()
-plt.close()
-
-# #THREEGENE
-# #Distribution of Threegene
-
-plt.figure()
-sns.histplot(meta_df["THREEGENE"], bins=4)
-plt.title("Distribution of Threegene")
-plt.xlabel("Threegene")
-plt.ylabel("Number of Patients")
-plt.tight_layout()
-plt.xticks(fontsize=7)  
-plt.savefig("../artifacts/images/ThreeGene_Distribution.png")
-plt.show()
-plt.close()
-
-```
-
-## Expression Data Plots before cleaning the Dataset
-
-```{python}
-#| code-fold: true
-#Shows Distribution of values of the first 40 Genes to check if Dataset is normalized
-
-columns_to_plot = expr_transposed_df.columns[:40]
-plt.figure(figsize=(15, 30)) 
-for i, column in enumerate(columns_to_plot):
-    plt.subplot(10, 4, i + 1)  
-    sns.histplot(expr_transposed_df[column].dropna(), bins=100)  
-    plt.title(f'Entrez Gene ID: {column}')  
-    plt.xlabel("Value")
-    plt.ylabel("Count")
-    plt.xlim(-10, 10) 
-    plt.ylim(0,200) 
-plt.tight_layout()  
-plt.savefig("../artifacts/images/Distribution_of_40_Genes.png", dpi=300)  
-plt.show()  
 plt.close()
 
 ```
@@ -201,38 +164,36 @@ print(meta_df.describe())
 print(meta_df['CLAUDIN_SUBTYPE'].value_counts())
 ```
 
-## Data Plotting
+## Data Plotting - Claudin Subtypes vs Gene Expression
 
 ```{python}
 #| code-fold: true
 
-expr_transposed_df_long = expr_transposed_df.melt(var_name="Feature", value_name="Value")
+# Prepare data with claudin subtypes for visualization
+expr_with_claudin = expr_transposed_df.copy()
+expr_with_claudin['CLAUDIN_SUBTYPE'] = meta_df.loc[expr_with_claudin.index, 'CLAUDIN_SUBTYPE']
 
-#Gene Plot
-plt.figure()
-sns.histplot(expr_transposed_df_long["Value"], bins=50)
-plt.title("Histogram")
-plt.xlabel("Value")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.show()
-plt.savefig("../artifacts/images/GenePlot.png")
-plt.close()
+# Remove rows with missing claudin subtype
+expr_with_claudin = expr_with_claudin.dropna(subset=['CLAUDIN_SUBTYPE'])
 
-#Claudin Subtype Plot
-plt.figure()
-sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)    
-plt.title("Claudin Subtype Count")
-plt.xlabel("Subtype")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.show()
-plt.savefig("../artifacts/images/Claudin.png")
-plt.close()
+# Select top variable genes for visualization
+gene_variances = expr_with_claudin.iloc[:, :-1].var()
+top_genes = gene_variances.nlargest(6).index.tolist()
 
-plt.figure()
-sns.heatmap(expr_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
+# Create violin plots for top genes across claudin subtypes
+fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+axes = axes.flatten()
+
+for idx, gene in enumerate(top_genes):
+    sns.violinplot(data=expr_with_claudin, x='CLAUDIN_SUBTYPE', y=gene, ax=axes[idx], hue='CLAUDIN_SUBTYPE', palette='Set2', legend=False)
+    axes[idx].set_title(f'Gene {gene} Expression by Claudin Subtype', fontsize=12, fontweight='bold')
+    axes[idx].set_xlabel('Claudin Subtype')
+    axes[idx].set_ylabel('Expression (z-score)')
+    axes[idx].tick_params(axis='x', rotation=45)
+
+plt.suptitle('Top Variable Genes Expression Across Claudin Subtypes', fontsize=14, fontweight='bold', y=1.00)
 plt.tight_layout()
+plt.savefig("../artifacts/images/Claudin_Gene_Violin_Plots.png", dpi=300, bbox_inches='tight')
 plt.show()
 plt.close()
 ```
@@ -290,14 +251,18 @@ print(expr_transposed_df.shape)
 ```
 
 ## Merge Data with reduced Metadata on Patient-ID
-### Change Claudine Subtypes from String to Integer 
-#### LumA        --> 6   (its most often in the data so it gets the highest number)
-#### LumB        --> 5     
-#### Her2        --> 4  
-#### claudin-low --> 3
-#### Basal       --> 2
-#### Normal      --> 1
-#### NC          --> 0
+
+| Claudin Subtype | Integer Code |
+|---|---|
+| LumA | 6 |
+| LumB | 5 |
+| Her2 | 4 |
+| claudin-low | 3 |
+| Basal | 2 |
+| Normal | 1 |
+| NC | 0 |
+
+*Note: LumA gets the highest number (6) as it's most frequent in the data*
 
 ```{python}
 #set Index Name of transposed expr_data the same as meta data
@@ -308,75 +273,6 @@ merged_df=expr_transposed_df.merge(meta_reduced_df, how='left', on="PATIENT_ID")
 merged_df["CLAUDIN_SUBTYPE"] = merged_df["CLAUDIN_SUBTYPE"].replace({"LumA": "6", "LumB": "5","Her2": "4","claudin-low": "3","Basal": "2","Normal": "1","NC": "0"})# inplace = True)
 print(merged_df.shape)
 print("Data Merged")
-```
-
-
-## Multivalorate Linear Regression
-```{python}
-
-#Tensor Conversion
-
-X = merged_df.iloc[:,0:-1].values #X = all expression data
-
-Y = merged_df["CLAUDIN_SUBTYPE"].values #Y = Claudin subtype
-Y = Y.astype(int)
-
-X = torch.tensor(X, dtype=torch.float32)
-Y = torch.tensor(Y, dtype=torch.float32)
-
-
-print("Conversion to tensor done")
-```
-
-
-```{python}
-
-#Training
-
-n_epochs = 124
-
-model = nn.Linear(20603, 1)
-
-loss_func = nn.MSELoss()
-
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3) 
-
-model.train()
-for epoch in range(n_epochs):
-    y_pred = model(X)
-    loss = loss_func(y_pred, Y.unsqueeze(1))
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-print("Fitted parameters:")
-print("Intercept (bias):", model.bias.item())
-
-## Notice more weights
-print("Coefficients (weights):", model.weight.detach().numpy())
-print('Loss: ', loss)
-```
-
-```{python}
-#Evaluation
-
-model.eval()
-y_pred = model(X)
-
-# convert to numpy (only for plotting)
-yp = y_pred.detach().numpy()
-yt = Y.numpy()
-
-title_str = f"Truth vs Predictions. Loss = MSE = {loss:.3f}"
-plt.figure(figsize=(6,4))
-plt.plot(yp, yt, 'o')
-plt.xlabel("y_pred = f(x)")
-plt.ylabel("y_true")
-plt.title(title_str)
-plt.legend()
-plt.grid(True)
-plt.show()
-plt.close()
 ```
 
 
