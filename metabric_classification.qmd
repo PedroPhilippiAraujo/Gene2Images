@@ -638,6 +638,19 @@ def show_metadata_column(meta_df, column_name):
 
 # PCA representation
 ```{python}
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+#z_bn (batch normalization)
+z_bn_np = z_bn.detach().numpy()
+
+#Y_test = tensor with labels
+labels = Y_test.numpy()
+
+#reduce PCA data to 2D
+pca = PCA(n_components=2)
+z_2d = pca.fit_transform(z_bn_np)
+
 plt.figure(figsize=(8, 6))
 sns.scatterplot(
     x=z_2d[:, 0],
@@ -647,7 +660,7 @@ sns.scatterplot(
     alpha=0.8
 
 )
-plt.title("PCA of latent Z space (normalized)")
+plt.title("2D PCA of 512D BatchNorm Latents (Cancer Types)")
 plt.xlabel("PC1")
 plt.ylabel("PC2")
 plt.axhline(0, color='grey', linewidth=0.5)
