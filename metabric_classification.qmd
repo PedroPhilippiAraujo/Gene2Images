@@ -685,94 +685,26 @@ def show_metadata_column(meta_df, column_name):
         print(f"Column '{column_name}' does not exist in meta_df")
 ```
 
-# PCA representation with violin plots
+# PCA representation
 ```{python}
-# Map numeric labels back to class names
-class_names = {
-    0: "NC",
-    1: "Normal",
-    2: "Basal",
-    3: "claudin-low",
-    4: "Her2",
-    5: "LumB",
-    6: "LumA"
-}
-label_names = [class_names[l] for l in labels]
+plt.figure(figsize=(8, 6))
+sns.scatterplot(
+    x=z_2d[:, 0],
+    y=z_2d[:, 1],
+    hue=labels,
+    palette='tab10',
+    alpha=0.8
 
-# Prepare long-form DataFrame
-pca_long_df = pd.DataFrame({
-    "PC1": z_2d[:, 0],
-    "PC2": z_2d[:, 1],
-    "Claudin_Subtype": label_names
-})
-
-# Melt wide → long
-pca_long_df = pca_long_df.melt(
-    id_vars="Claudin_Subtype",
-    value_vars=["PC1", "PC2"],
-    var_name="PC_Component",
-    value_name="Value"
 )
-
-# Plot
-plt.figure(figsize=(14, 7))
-sns.set(style="whitegrid", palette="Set2")
-
-sns.violinplot(
-    data=pca_long_df,
-    x="Claudin_Subtype",
-    y="Value",
-    hue="PC_Component",
-    dodge=True,        
-    inner="quartile", 
-    palette={"PC1":"#1f77b4", "PC2":"#ff7f0e"}
-)
-
-plt.xlabel("Claudin Subtype", fontsize=12, fontweight="bold")
-plt.ylabel("PCA Value", fontsize=12, fontweight="bold")
-plt.title("Distribution of PCA Components (PC1 & PC2) by Claudin Subtype", fontsize=14, fontweight="bold")
-plt.xticks(rotation=45)
-plt.legend(title="PCA Component", loc="upper right")
+plt.title("PCA of latent Z space (normalized)")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.axhline(0, color='grey', linewidth=0.5)
+plt.axvline(0, color='grey', linewidth=0.5)
 plt.tight_layout()
 plt.show()
+
 ```
-
-# PCA representation before dropping NA values
-
-```{python}
-expr_values = expr_transposed_df.values 
-pca = PCA(n_components=2)
-z_2d = pca.fit_transform(expr_values)
-
-# Claudin Subtype Labels
-labels = meta_df.loc[expr_transposed_df.index, "CLAUDIN_SUBTYPE"].map({
-    "LumA": 6,
-    "LumB": 5,
-    "Her2": 4,
-    "claudin-low": 3,
-    "Basal": 2,
-    "Normal": 1,
-    "NC": 0
-}).values
-
-# Map numeric labels
-class_names = {
-    0: "NC",
-    1: "Normal",
-    2: "Basal",
-    3: "claudin-low",
-    4: "Her2",
-    5: "LumB",
-    6: "LumA"
-}
-label_names = [class_names[l] for l in labels]
-
-# DataFrame for Violin-Plot 
-pca_df = pd.DataFrame({
-    "PC1": z_2d[:, 0],
-    "PC2": z_2d[:, 1],
-    "Claudin_Subtype": label_names
-})
 
 # long-form DataFrame 
 pca_long_df = pca_df.melt(
