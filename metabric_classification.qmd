@@ -81,6 +81,11 @@ meta_df = meta_df.set_index("PATIENT_ID")
 
 ```
 
+```{python}
+print(f"Expression data shape: {expr_transposed_df.shape}")
+print(f"Metadata shape: {meta_df.shape}")
+```
+
 ## Creating one Dataframe with only PAM50 Genes
 
 ```{python}
@@ -194,39 +199,6 @@ plt.tight_layout()
 plt.savefig("../artifacts/images/Claudin_Gene_Violin_Plots.png", dpi=300, bbox_inches='tight')
 plt.show()
 plt.close()
-```
-
-## Plot PAM50 Genes
-
-```{python}
-#| code-fold: true
-#PAM50_transposed_df
-
-#Shows Distribution of values of PAM50_Genes
-
-#columns_to_plot = PAM50_transposed_df.columns[:50]
-#plt.figure(figsize=(15, 30)) 
-#for i, column in enumerate(columns_to_plot):
-#    plt.subplot(13, 4, i + 1)  
-#    sns.histplot(PAM50_transposed_df[column].dropna(), bins=100)  
-#    plt.title("Distribution of PAM50 Values")
-#    plt.title(f'Entrez Gene ID: {column}')  
-#    plt.xlabel("Value")
-#    plt.ylabel("Count")
-#    plt.xlim(-10, 10) 
-#    plt.ylim(0,200) 
-#plt.tight_layout()  
-#plt.savefig("../artifacts/images/Distribution_of_PAM50_Genes.png", dpi=300)  
-#plt.show()  
-#plt.close()
-
-# Plot test Heatmap to compare to test Heatmap of Expression Set
-
-plt.figure()
-sns.heatmap(PAM50_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
-plt.tight_layout()
-plt.show()
-
 ```
 
 
@@ -603,27 +575,6 @@ plt.tight_layout()
 plt.show()
 ```
 
-## 3. Correlation Matrix of Z dimensions
-
-```{python}
-#| code-fold: true
-# Show correlation between Z dimensions (sample subset)
-n_dims_corr = min(20, z_bn_np.shape[1])
-correlation_matrix = np.corrcoef(z_bn_np[:, :n_dims_corr].T)
-
-plt.figure(figsize=(12, 10))
-sns.heatmap(correlation_matrix, 
-            cmap='coolwarm', center=0, 
-            square=True,
-            xticklabels=[f'D{i+1}' for i in range(n_dims_corr)],
-            yticklabels=[f'D{i+1}' for i in range(n_dims_corr)],
-            cbar_kws={'label': 'Correlation'})
-plt.title(f'Correlation Matrix of First {n_dims_corr} Z_BN Dimensions')
-plt.tight_layout()
-plt.show()
-
-print(f"\nMean absolute correlation (off-diagonal): {np.abs(correlation_matrix[np.triu_indices_from(correlation_matrix, k=1)]).mean():.4f}")
-```
 
 # Model Save
 ```{python}
