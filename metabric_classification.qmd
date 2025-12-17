@@ -669,33 +669,3 @@ plt.tight_layout()
 plt.show()
 
 ```
-
-# long-form DataFrame 
-pca_long_df = pca_df.melt(
-    id_vars="Claudin_Subtype",
-    value_vars=["PC1", "PC2"],
-    var_name="PC_Component",
-    value_name="Value"
-)
-
-plt.figure(figsize=(14, 7))
-sns.set(style="whitegrid", palette="Set2")
-
-sns.violinplot(
-    data=pca_long_df,
-    x="Claudin_Subtype",
-    y="Value",
-    hue="PC_Component",
-    dodge=True
-    inner="quartile",   
-    palette={"PC1":"#1f77b4", "PC2":"#ff7f0e"}
-)
-
-plt.xlabel("Claudin Subtype", fontsize=12, fontweight="bold")
-plt.ylabel("PCA Value", fontsize=12, fontweight="bold")
-plt.title("Distribution of PCA Components (PC1 & PC2) by Claudin Subtype before dropping NA values", fontsize=14, fontweight="bold")
-plt.xticks(rotation=45)
-plt.legend(title="PCA Component", loc="upper right")
-plt.tight_layout()
-plt.show()
-```
