@@ -14,9 +14,7 @@ kernel: metabric
 This code will be used to acquire data and visualize it.
 
 ## Data Acquisition and Extraction
-
 ```{python}
-
 import os
 import urllib.request
 import tarfile
@@ -83,6 +81,11 @@ meta_df = meta_df.set_index("PATIENT_ID")
 
 ```
 
+```{python}
+print(f"Expression data shape: {expr_transposed_df.shape}")
+print(f"Metadata shape: {meta_df.shape}")
+```
+
 ## Creating one Dataframe with only PAM50 Genes
 
 ```{python}
@@ -107,27 +110,27 @@ os.makedirs("../artifacts/images", exist_ok=True)
 
 #Age at Point of Diagnosis distribution 
 
-plt.figure()
-sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
-plt.title("Histogram of Age at Diagnosis")
-plt.xlabel("Age")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.savefig("../artifacts/images/AgePlot.png")
-plt.show()
-plt.close()
-
-# #Chemotherapy
-
-plt.figure()
-sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
-plt.title("Histogram of Chemotherapy")
-plt.xlabel("Patient had Chemotherapy")
-plt.ylabel("Number of Patients")
-plt.tight_layout()
-plt.savefig("../artifacts/images/Chemotherapy.png")
-plt.show()
-plt.close()
+#plt.figure()
+#sns.histplot(meta_df["AGE_AT_DIAGNOSIS"], bins=100)
+#plt.title("Histogram of Age at Diagnosis")
+#plt.xlabel("Age")
+#plt.ylabel("Count")
+#plt.tight_layout()
+#plt.savefig("../artifacts/images/AgePlot.png")
+#plt.show()
+#plt.close()
+#
+## #Chemotherapy
+#
+#plt.figure()
+#sns.histplot(meta_df["CHEMOTHERAPY"], bins=2)
+#plt.title("Histogram of Chemotherapy")
+#plt.xlabel("Patient had Chemotherapy")
+#plt.ylabel("Number of Patients")
+#plt.tight_layout()
+#plt.savefig("../artifacts/images/Chemotherapy.png")
+#plt.show()
+#plt.close()
 
 # #Distribution of Claudin-Subtypes  
 
@@ -139,43 +142,6 @@ plt.ylabel("Number of Patients")
 plt.tight_layout()
 plt.savefig("../artifacts/images/Claudine_Distribution.png")
 plt.show()
-plt.close()
-
-# #THREEGENE
-# #Distribution of Threegene
-
-plt.figure()
-sns.histplot(meta_df["THREEGENE"], bins=4)
-plt.title("Distribution of Threegene")
-plt.xlabel("Threegene")
-plt.ylabel("Number of Patients")
-plt.tight_layout()
-plt.xticks(fontsize=7)  
-plt.savefig("../artifacts/images/ThreeGene_Distribution.png")
-plt.show()
-plt.close()
-
-```
-
-## Expression Data Plots before cleaning the Dataset
-
-```{python}
-#| code-fold: true
-#Shows Distribution of values of the first 40 Genes to check if Dataset is normalized
-
-columns_to_plot = expr_transposed_df.columns[:40]
-plt.figure(figsize=(15, 30)) 
-for i, column in enumerate(columns_to_plot):
-    plt.subplot(10, 4, i + 1)  
-    sns.histplot(expr_transposed_df[column].dropna(), bins=100)  
-    plt.title(f'Entrez Gene ID: {column}')  
-    plt.xlabel("Value")
-    plt.ylabel("Count")
-    plt.xlim(-10, 10) 
-    plt.ylim(0,200) 
-plt.tight_layout()  
-plt.savefig("../artifacts/images/Distribution_of_40_Genes.png", dpi=300)  
-plt.show()  
 plt.close()
 
 ```
@@ -201,73 +167,38 @@ print(meta_df.describe())
 print(meta_df['CLAUDIN_SUBTYPE'].value_counts())
 ```
 
-## Data Plotting
+## Data Plotting - Claudin Subtypes vs Gene Expression
 
 ```{python}
 #| code-fold: true
 
-expr_transposed_df_long = expr_transposed_df.melt(var_name="Feature", value_name="Value")
+# Prepare data with claudin subtypes for visualization
+expr_with_claudin = expr_transposed_df.copy()
+expr_with_claudin['CLAUDIN_SUBTYPE'] = meta_df.loc[expr_with_claudin.index, 'CLAUDIN_SUBTYPE']
 
-#Gene Plot
-plt.figure()
-sns.histplot(expr_transposed_df_long["Value"], bins=50)
-plt.title("Histogram")
-plt.xlabel("Value")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.show()
-plt.savefig("../artifacts/images/GenePlot.png")
-plt.close()
+# Remove rows with missing claudin subtype
+expr_with_claudin = expr_with_claudin.dropna(subset=['CLAUDIN_SUBTYPE'])
 
-#Claudin Subtype Plot
-plt.figure()
-sns.histplot(meta_df["CLAUDIN_SUBTYPE"], bins=7)    
-plt.title("Claudin Subtype Count")
-plt.xlabel("Subtype")
-plt.ylabel("Count")
-plt.tight_layout()
-plt.show()
-plt.savefig("../artifacts/images/Claudin.png")
-plt.close()
+# Select top variable genes for visualization
+gene_variances = expr_with_claudin.iloc[:, :-1].var()
+top_genes = gene_variances.nlargest(6).index.tolist()
 
-plt.figure()
-sns.heatmap(expr_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
+# Create violin plots for top genes across claudin subtypes
+fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+axes = axes.flatten()
+
+for idx, gene in enumerate(top_genes):
+    sns.violinplot(data=expr_with_claudin, x='CLAUDIN_SUBTYPE', y=gene, ax=axes[idx], hue='CLAUDIN_SUBTYPE', palette='Set2', legend=False)
+    axes[idx].set_title(f'Gene {gene} Expression by Claudin Subtype', fontsize=12, fontweight='bold')
+    axes[idx].set_xlabel('Claudin Subtype')
+    axes[idx].set_ylabel('Expression (z-score)')
+    axes[idx].tick_params(axis='x', rotation=45)
+
+plt.suptitle('Top Variable Genes Expression Across Claudin Subtypes', fontsize=14, fontweight='bold', y=1.00)
 plt.tight_layout()
+plt.savefig("../artifacts/images/Claudin_Gene_Violin_Plots.png", dpi=300, bbox_inches='tight')
 plt.show()
 plt.close()
-```
-
-## Plot PAM50 Genes
-
-```{python}
-#| code-fold: true
-#PAM50_transposed_df
-
-#Shows Distribution of values of PAM50_Genes
-
-#columns_to_plot = PAM50_transposed_df.columns[:50]
-#plt.figure(figsize=(15, 30)) 
-#for i, column in enumerate(columns_to_plot):
-#    plt.subplot(13, 4, i + 1)  
-#    sns.histplot(PAM50_transposed_df[column].dropna(), bins=100)  
-#    plt.title("Distribution of PAM50 Values")
-#    plt.title(f'Entrez Gene ID: {column}')  
-#    plt.xlabel("Value")
-#    plt.ylabel("Count")
-#    plt.xlim(-10, 10) 
-#    plt.ylim(0,200) 
-#plt.tight_layout()  
-#plt.savefig("../artifacts/images/Distribution_of_PAM50_Genes.png", dpi=300)  
-#plt.show()  
-#plt.close()
-
-# Plot test Heatmap to compare to test Heatmap of Expression Set
-
-plt.figure()
-sns.heatmap(PAM50_transposed_df.iloc[:10, :15], cmap="Blues", cbar_kws={'label': 'Value'})
-plt.tight_layout()
-plt.show()
-
 ```
 
 
@@ -290,14 +221,18 @@ print(expr_transposed_df.shape)
 ```
 
 ## Merge Data with reduced Metadata on Patient-ID
-### Change Claudine Subtypes from String to Integer 
-#### LumA        --> 6   (its most often in the data so it gets the highest number)
-#### LumB        --> 5     
-#### Her2        --> 4  
-#### claudin-low --> 3
-#### Basal       --> 2
-#### Normal      --> 1
-#### NC          --> 0
+
+| Claudin Subtype | Integer Code |
+|---|---|
+| LumA | 6 |
+| LumB | 5 |
+| Her2 | 4 |
+| claudin-low | 3 |
+| Basal | 2 |
+| Normal | 1 |
+| NC | 0 |
+
+*Note: LumA gets the highest number (6) as it's most frequent in the data*
 
 ```{python}
 #set Index Name of transposed expr_data the same as meta data
@@ -308,75 +243,6 @@ merged_df=expr_transposed_df.merge(meta_reduced_df, how='left', on="PATIENT_ID")
 merged_df["CLAUDIN_SUBTYPE"] = merged_df["CLAUDIN_SUBTYPE"].replace({"LumA": "6", "LumB": "5","Her2": "4","claudin-low": "3","Basal": "2","Normal": "1","NC": "0"})# inplace = True)
 print(merged_df.shape)
 print("Data Merged")
-```
-
-
-## Multivalorate Linear Regression
-```{python}
-
-#Tensor Conversion
-
-X = merged_df.iloc[:,0:-1].values #X = all expression data
-
-Y = merged_df["CLAUDIN_SUBTYPE"].values #Y = Claudin subtype
-Y = Y.astype(int)
-
-X = torch.tensor(X, dtype=torch.float32)
-Y = torch.tensor(Y, dtype=torch.float32)
-
-
-print("Conversion to tensor done")
-```
-
-
-```{python}
-
-#Training
-
-n_epochs = 124
-
-model = nn.Linear(20603, 1)
-
-loss_func = nn.MSELoss()
-
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3) 
-
-model.train()
-for epoch in range(n_epochs):
-    y_pred = model(X)
-    loss = loss_func(y_pred, Y.unsqueeze(1))
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-print("Fitted parameters:")
-print("Intercept (bias):", model.bias.item())
-
-## Notice more weights
-print("Coefficients (weights):", model.weight.detach().numpy())
-print('Loss: ', loss)
-```
-
-```{python}
-#Evaluation
-
-model.eval()
-y_pred = model(X)
-
-# convert to numpy (only for plotting)
-yp = y_pred.detach().numpy()
-yt = Y.numpy()
-
-title_str = f"Truth vs Predictions. Loss = MSE = {loss:.3f}"
-plt.figure(figsize=(6,4))
-plt.plot(yp, yt, 'o')
-plt.xlabel("y_pred = f(x)")
-plt.ylabel("y_true")
-plt.title(title_str)
-plt.legend()
-plt.grid(True)
-plt.show()
-plt.close()
 ```
 
 
@@ -709,27 +575,6 @@ plt.tight_layout()
 plt.show()
 ```
 
-## 3. Correlation Matrix of Z dimensions
-
-```{python}
-#| code-fold: true
-# Show correlation between Z dimensions (sample subset)
-n_dims_corr = min(20, z_bn_np.shape[1])
-correlation_matrix = np.corrcoef(z_bn_np[:, :n_dims_corr].T)
-
-plt.figure(figsize=(12, 10))
-sns.heatmap(correlation_matrix, 
-            cmap='coolwarm', center=0, 
-            square=True,
-            xticklabels=[f'D{i+1}' for i in range(n_dims_corr)],
-            yticklabels=[f'D{i+1}' for i in range(n_dims_corr)],
-            cbar_kws={'label': 'Correlation'})
-plt.title(f'Correlation Matrix of First {n_dims_corr} Z_BN Dimensions')
-plt.tight_layout()
-plt.show()
-
-print(f"\nMean absolute correlation (off-diagonal): {np.abs(correlation_matrix[np.triu_indices_from(correlation_matrix, k=1)]).mean():.4f}")
-```
 
 # Model Save
 ```{python}
@@ -794,29 +639,82 @@ def show_metadata_column(meta_df, column_name):
 # PCA representation
 ```{python}
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 
 #z_bn (batch normalization)
-z_bn_np = z_bn.detach().numpy() #create numpy array
+z_bn_np = z_bn.detach().numpy()
 
 #Y_test = tensor with labels
 labels = Y_test.numpy()
 
-#2 dimensional PCA
+#reduce PCA data to 2D
 pca = PCA(n_components=2)
 z_2d = pca.fit_transform(z_bn_np)
-```
 
-# Plotting of PCA representation
-```{python}
-#| code-fold: true
-plt.figure(figsize=(8,6))
-scatter = plt.scatter(z_2d[:,0], z_2d[:,1], c=labels, cmap='tab10', alpha=0.7)
+plt.figure(figsize=(8, 6))
+sns.scatterplot(
+    x=z_2d[:, 0],
+    y=z_2d[:, 1],
+    hue=labels,
+    palette='tab10',
+    alpha=0.8
+
+)
+plt.title("2D PCA of 512D BatchNorm Latents (Cancer Types)")
 plt.xlabel("PC1")
 plt.ylabel("PC2")
-plt.title("2D PCA of 512D BatchNorm Latents (Cancer Types)")
-plt.colorbar(scatter, label="Claudin Subtype")
+plt.axhline(0, color='grey', linewidth=0.5)
+plt.axvline(0, color='grey', linewidth=0.5)
+plt.tight_layout()
 plt.show()
+
 ```
 
-show_metadata_column(meta_df, "THREEGENE")
+# Sanity Check: Is expression data normalized?
+```{python}
+# Expression data (patients x genes) 
+expr_check = expr_transposed_df.copy()
+
+# add Claudin subtype labels 
+expr_check['CLAUDIN_SUBTYPE'] = meta_df.loc[
+    expr_check.index, 'CLAUDIN_SUBTYPE'
+]
+
+# Remove samples without subtype
+expr_check = expr_check.dropna(subset=['CLAUDIN_SUBTYPE'])
+
+# Subsample genes
+np.random.seed(42)
+n_genes = 100  # number of genes to sample
+sampled_genes = np.random.choice(
+    expr_check.columns[:-1],  # exclude subtype column
+    size=n_genes,
+    replace=False
+)
+
+expr_subset = expr_check[sampled_genes.tolist() + ['CLAUDIN_SUBTYPE']]
+
+# Convert to long format
+expr_long = expr_subset.melt(
+    id_vars='CLAUDIN_SUBTYPE',
+    var_name='Gene',
+    value_name='Expression'
+)
+
+# Violin plot
+plt.figure(figsize=(10, 6))
+sns.violinplot(
+    data=expr_long,
+    x='CLAUDIN_SUBTYPE',
+    y='Expression',
+    inner='quartile',
+    cut=0
+)
+
+plt.axhline(0, color='red', linestyle='--', linewidth=1)
+plt.title("Sanity Check: Gene Expression (z-scores) per Claudin Subtype")
+plt.xlabel("Claudin Subtype")
+plt.ylabel("Expression (z-score)")
+plt.tight_layout()
+plt.show()
 ```
